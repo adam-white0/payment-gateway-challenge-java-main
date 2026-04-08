@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -24,6 +25,30 @@ class PaymentGatewayControllerTest {
   private MockMvc mvc;
   @Autowired
   PaymentsRepository paymentsRepository;
+
+  @Test
+  void shouldReturn400_whenPaymentDetailsAreInvalid() throws Exception {
+    String requestBody = """
+            {
+                "cardNumber": "1234567890123",
+                "expiryMonth": 1,
+                "expiryYear": 2020,
+                "currency": "ABCD",
+                "amount": null,
+                "cvv": "12345"
+            }
+        """;
+
+    mvc.perform(MockMvcRequestBuilders.post("/process-payment")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestBody))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errors.cardNumber").exists())
+            .andExpect(jsonPath("$.errors.expiryYear").exists())
+            .andExpect(jsonPath("$.errors.currency").exists())
+            .andExpect(jsonPath("$.errors.amount").exists())
+            .andExpect(jsonPath("$.errors.cvv").exists());
+  }
 
   @Test
   void whenPaymentWithIdExistThenCorrectPaymentIsReturned() throws Exception {
