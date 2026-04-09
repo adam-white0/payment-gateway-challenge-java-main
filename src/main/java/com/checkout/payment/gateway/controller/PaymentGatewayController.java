@@ -20,11 +20,12 @@ public class PaymentGatewayController {
   }
 
   @PostMapping("/process-payment")
-  public ResponseEntity<Boolean> processPayment(
+  public ResponseEntity<PostPaymentResponse> processPayment(
           @RequestBody @Valid ProcessPaymentRequest processPaymentRequest
         ) {
 
-    return new ResponseEntity<>(true, HttpStatus.OK);
+    PostPaymentResponse paymentResponse = paymentGatewayService.processPayment(processPaymentRequest);
+    return new ResponseEntity<>(paymentResponse, HttpStatus.OK);
   }
 
   @GetMapping("/payment/{id}")

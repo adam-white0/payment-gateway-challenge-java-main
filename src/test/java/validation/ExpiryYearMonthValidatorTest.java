@@ -26,7 +26,6 @@ public class ExpiryYearMonthValidatorTest {
             validator = new ExpiryYearMonthValidator();
             context = mock(ConstraintValidatorContext.class);
 
-
             ConstraintViolationBuilder constraintViolationBuilder =
                     mock(ConstraintViolationBuilder.class);
             NodeBuilderCustomizableContext nodeBuilderCustomizableContext =
