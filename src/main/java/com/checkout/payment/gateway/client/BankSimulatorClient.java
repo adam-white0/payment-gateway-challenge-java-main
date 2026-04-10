@@ -4,19 +4,36 @@ import com.checkout.payment.gateway.exception.PaymentAuthorisationException;
 import com.checkout.payment.gateway.model.AuthorisePaymentRequest;
 import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import java.net.http.HttpClient;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class BankSimulatorClient {
     private final RestClient restClient;
 
-    public AuthorisePaymentResponse authorisePayment(AuthorisePaymentRequest paymentRequest) {
+    public BankSimulatorClient(
+        RestClient.Builder restClientBuilder,
+        @Value("${bank-simulator.base-url}")String baseUrl)
+    {
+      HttpClient httpClient = HttpClient.newBuilder()
+          .version(HttpClient.Version.HTTP_1_1)
+          .build();
 
-        log.info(String.valueOf(paymentRequest));
+      this.restClient = restClientBuilder
+          .baseUrl(baseUrl)
+          .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+          .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+          .build();
+    }
+
+
+  public AuthorisePaymentResponse authorisePayment(AuthorisePaymentRequest paymentRequest) {
+
         return restClient.post()
                 .uri("/payments")
                 .body(paymentRequest)

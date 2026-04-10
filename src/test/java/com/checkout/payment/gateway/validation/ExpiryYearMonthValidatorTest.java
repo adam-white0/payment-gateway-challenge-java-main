@@ -1,4 +1,4 @@
-package validation;
+package com.checkout.payment.gateway.validation;
 
 import com.checkout.payment.gateway.model.ProcessPaymentRequest;
 import com.checkout.payment.gateway.validation.ExpiryYearMonthValidator;
@@ -56,11 +56,9 @@ public class ExpiryYearMonthValidatorTest {
         }
 
         private ProcessPaymentRequest buildRequest(YearMonth expiry) {
-            ProcessPaymentRequest request = new ProcessPaymentRequest();
-
-            request.setExpiryMonth(expiry.getMonthValue());
-            request.setExpiryYear(expiry.getYear());
-
-            return request;
+          return ProcessPaymentRequest.builder()
+              .expiryMonth(expiry.getMonthValue())
+              .expiryYear(expiry.getYear())
+              .build();
         }
     }

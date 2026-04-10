@@ -1,6 +1,5 @@
-package validation;
+package com.checkout.payment.gateway.validation;
 
-import com.checkout.payment.gateway.validation.CurrencyValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

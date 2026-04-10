@@ -31,7 +31,7 @@ public class PaymentGatewayService {
 
   public PostPaymentResponse processPayment(ProcessPaymentRequest paymentRequest) {
 
-    LOG.info("Start process payment");
+    LOG.debug("Start process payment");
     AuthorisePaymentRequest authorisePaymentRequest = AuthorisePaymentRequest.builder()
             .cardNumber(paymentRequest.getCardNumber())
             .expiryDate(String.format("%02d/%d", paymentRequest.getExpiryMonth(), paymentRequest.getExpiryYear()))
@@ -42,12 +42,10 @@ public class PaymentGatewayService {
 
     AuthorisePaymentResponse authorisePaymentResponse = bankSimulatorClient.authorisePayment(authorisePaymentRequest);
 
-    String maskedCardNumber = maskCardNumber(paymentRequest.getCardNumber());
-
     PostPaymentResponse postPaymentResponse = PostPaymentResponse.builder()
             .id(UUID.randomUUID())
             .status(authorisePaymentResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED)
-            .cardNumberLastFour(maskedCardNumber)
+            .cardNumberLastFour(paymentRequest.getMaskedCardNumber())
             .expiryMonth(paymentRequest.getExpiryMonth())
             .expiryYear(paymentRequest.getExpiryYear())
             .currency(paymentRequest.getCurrency())
@@ -57,15 +55,5 @@ public class PaymentGatewayService {
     paymentsRepository.add(postPaymentResponse);
 
     return postPaymentResponse;
-  }
-
-  private String maskCardNumber(String cardNumber) {
-      int cardNumberLength = cardNumber.length();
-
-      int lengthOfMask = cardNumberLength - 4;
-      String mask = "*".repeat(lengthOfMask);
-      String lastFourCardNumbers = cardNumber.substring(lengthOfMask);
-
-      return mask + lastFourCardNumbers;
   }
 }

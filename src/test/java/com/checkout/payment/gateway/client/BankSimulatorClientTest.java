@@ -1,0 +1,91 @@
+package com.checkout.payment.gateway.client;
+
+import com.checkout.payment.gateway.exception.PaymentAuthorisationException;
+import com.checkout.payment.gateway.model.AuthorisePaymentRequest;
+import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
+import org.wiremock.spring.InjectWireMock;
+
+
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.serviceUnavailable;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@RestClientTest(BankSimulatorClient.class)
+@EnableWireMock(@ConfigureWireMock(
+    name = "bank-simulator",
+    baseUrlProperties = "bank-simulator.base-url"
+))
+class BankSimulatorClientTest {
+
+  @Autowired
+  private BankSimulatorClient bankSimulatorClient;
+
+  @InjectWireMock("bank-simulator")
+  private WireMockServer wireMock;
+
+  @Autowired
+  private ObjectMapper objectMapper;
+
+
+  @Test
+  void shouldReturnAuthorisedResponseOnSuccessWhenCardNumberIsOdd() throws Exception {
+    wireMock.stubFor(post(urlEqualTo("/payments"))
+        .willReturn(okJson("""
+                    {
+                      "authorized": true,
+                      "authorization_code": "0bb07405-6d44-4b50-a14f-7ae0beff13ad"
+                    }
+                """)));
+
+    AuthorisePaymentResponse result = bankSimulatorClient.authorisePayment(
+        buildAuthorisePaymentRequest("123456789012345"));
+
+    assertThat(result.isAuthorized()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUnauthorisedResponseOnSuccessWhenCardNumberIsEven() throws Exception {
+    wireMock.stubFor(post(urlEqualTo("/payments"))
+        .willReturn(okJson("""
+                    {"authorized": false}
+                """)));
+
+    AuthorisePaymentResponse result = bankSimulatorClient.authorisePayment(
+        buildAuthorisePaymentRequest("123456789012344"));
+
+    assertThat(result.isAuthorized()).isFalse();
+  }
+
+  @Test
+  void shouldThrowPaymentAuthorisationExceptionOn503WhenCardNumberEndsInZero() {
+    wireMock.stubFor(post(urlEqualTo("/payments"))
+        .willReturn(serviceUnavailable()));
+
+    assertThatThrownBy(() -> bankSimulatorClient.authorisePayment(
+        buildAuthorisePaymentRequest("123456789012340")))
+        .isInstanceOf(PaymentAuthorisationException.class)
+        .hasMessage("No payment could be created as invalid information was supplied");
+  }
+
+  private AuthorisePaymentRequest buildAuthorisePaymentRequest (String cardNumber) {
+
+    return AuthorisePaymentRequest.builder()
+        .cardNumber(cardNumber)
+        .expiryDate("12/2027")
+        .currency("GBP")
+        .amount(2000)
+        .cvv("123")
+        .build();
+  }
+}

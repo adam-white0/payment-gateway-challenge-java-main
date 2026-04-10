@@ -3,9 +3,11 @@ package com.checkout.payment.gateway.model;
 import com.checkout.payment.gateway.validation.ValidCurrency;
 import com.checkout.payment.gateway.validation.ValidExpiryYearMonth;
 import jakarta.validation.constraints.*;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 @ValidExpiryYearMonth
 public class ProcessPaymentRequest {
 
@@ -31,4 +33,14 @@ public class ProcessPaymentRequest {
   @NotBlank(message = "CVV is required")
   @Pattern(regexp = "\\d{3,4}", message = "CVV must be 3-4 digits")
   private String cvv;
+
+  public String getMaskedCardNumber() {
+    int cardNumberLength = cardNumber.length();
+
+    int lengthOfMask = cardNumberLength - 4;
+    String mask = "*".repeat(lengthOfMask);
+    String lastFourCardNumbers = cardNumber.substring(lengthOfMask);
+
+    return mask + lastFourCardNumbers;
+  }
 }
