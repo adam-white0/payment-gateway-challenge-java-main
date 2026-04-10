@@ -23,7 +23,7 @@ public class CommonExceptionHandler {
   @ExceptionHandler(EventProcessingException.class)
   public ResponseEntity<ErrorResponse> handleException(EventProcessingException ex) {
     LOG.error("Exception happened", ex);
-    return new ResponseEntity<>(new ErrorResponse("Page not found"),
+    return new ResponseEntity<>(new ErrorResponse(ex.getMessage()),
         HttpStatus.NOT_FOUND);
   }
 
@@ -48,18 +48,11 @@ public class CommonExceptionHandler {
 
   @ExceptionHandler(PaymentAuthorisationException.class)
   @ResponseBody
-  public ResponseEntity<PaymentInformationErrorResponse> handlePaymentAuthorisationException(){
-
-    Map<String, String> errors = new HashMap<>();
-
-    errors.put("cardNumber", "Card number cannot end in 0");
+  public ResponseEntity<ErrorResponse> handlePaymentAuthorisationException(
+      PaymentAuthorisationException ex){
 
     return new ResponseEntity<>(
-            new PaymentInformationErrorResponse(
-                    "Invalid details",
-                    PaymentStatus.REJECTED,
-                    errors
-            ), HttpStatus.BAD_REQUEST);
+            new ErrorResponse(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
   }
 
 }

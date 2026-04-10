@@ -3,7 +3,6 @@ package com.checkout.payment.gateway.client;
 import com.checkout.payment.gateway.exception.PaymentAuthorisationException;
 import com.checkout.payment.gateway.model.AuthorisePaymentRequest;
 import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +33,8 @@ class BankSimulatorClientTest {
   @InjectWireMock("bank-simulator")
   private WireMockServer wireMock;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
-
   @Test
-  void shouldReturnAuthorisedResponseOnSuccessWhenCardNumberIsOdd() throws Exception {
+  void shouldReturnAuthorisedResponseOnSuccessWhenCardNumberIsOdd() {
     wireMock.stubFor(post(urlEqualTo("/payments"))
         .willReturn(okJson("""
                     {
@@ -55,7 +50,7 @@ class BankSimulatorClientTest {
   }
 
   @Test
-  void shouldReturnUnauthorisedResponseOnSuccessWhenCardNumberIsEven() throws Exception {
+  void shouldReturnUnauthorisedResponseOnSuccessWhenCardNumberIsEven() {
     wireMock.stubFor(post(urlEqualTo("/payments"))
         .willReturn(okJson("""
                     {"authorized": false}
@@ -75,7 +70,7 @@ class BankSimulatorClientTest {
     assertThatThrownBy(() -> bankSimulatorClient.authorisePayment(
         buildAuthorisePaymentRequest("123456789012340")))
         .isInstanceOf(PaymentAuthorisationException.class)
-        .hasMessage("No payment could be created as invalid information was supplied");
+        .hasMessage("Service Unavailable - Unable to authorise payment");
   }
 
   private AuthorisePaymentRequest buildAuthorisePaymentRequest (String cardNumber) {

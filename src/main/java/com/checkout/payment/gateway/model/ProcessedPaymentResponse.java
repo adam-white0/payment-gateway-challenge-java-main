@@ -8,9 +8,10 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class PostPaymentResponse {
+public class ProcessedPaymentResponse {
   private UUID id;
   private PaymentStatus status;
+  private String authorisationCode;
   private String cardNumberLastFour;
   private int expiryMonth;
   private int expiryYear;
@@ -19,7 +20,7 @@ public class PostPaymentResponse {
 
   @Override
   public String toString() {
-    return "GetPaymentResponse{" +
+    return "PaymentResponse{" +
         "id=" + id +
         ", status=" + status +
         ", cardNumberLastFour=" + cardNumberLastFour +

@@ -4,11 +4,13 @@ import com.checkout.payment.gateway.client.BankSimulatorClient;
 import com.checkout.payment.gateway.enums.PaymentStatus;
 import com.checkout.payment.gateway.exception.EventProcessingException;
 import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
-import com.checkout.payment.gateway.model.PostPaymentResponse;
+import com.checkout.payment.gateway.model.PaymentResponse;
+import com.checkout.payment.gateway.model.ProcessedPaymentResponse;
 import com.checkout.payment.gateway.model.ProcessPaymentRequest;
 import com.checkout.payment.gateway.repository.PaymentsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,32 +39,41 @@ class PaymentGatewayServiceTest {
   void shouldReturnResponseWithAuthorisedStatusWhenBankApprovesPayment() {
     ProcessPaymentRequest request = buildProcessPaymentRequest("123456789012345");
 
-    PostPaymentResponse expectedResponse = buildPostPaymentResponse(
-        null,
+    PaymentResponse expectedResponse = buildPaymentResponse(
         PaymentStatus.AUTHORIZED,
         "***********2345"
     );
 
     AuthorisePaymentResponse authPaymentResponse = new AuthorisePaymentResponse();
     authPaymentResponse.setAuthorized(true);
+    authPaymentResponse.setAuthorizationCode("0bb07405-6d44-4b50-a14f-7ae0beff13ad");
 
     when(bankSimulatorClient.authorisePayment(any())).thenReturn(authPaymentResponse);
 
-    PostPaymentResponse response = paymentGatewayService.processPayment(request);
+    PaymentResponse response = paymentGatewayService.processPayment(request);
 
+    ArgumentCaptor<ProcessedPaymentResponse> captor = ArgumentCaptor
+        .forClass(ProcessedPaymentResponse.class);
+    verify(paymentsRepository).add(captor.capture());
+
+    // Assertion on the object saved in repository
+    ProcessedPaymentResponse savedResponse = captor.getValue();
+    assertThat(savedResponse.getStatus()).isEqualTo(expectedResponse.getStatus());
+    assertThat(savedResponse.getAuthorisationCode()).isEqualTo(
+        authPaymentResponse.getAuthorizationCode());
+
+    // Assertion on the returned object
     assertThat(response)
         .usingRecursiveComparison()
         .ignoringFields("id")
         .isEqualTo(expectedResponse);
-    verify(paymentsRepository).add(response);
   }
 
   @Test
   void shouldReturnResponseWithDeclinedStatusWhenBankDeclinesPayment() {
     ProcessPaymentRequest request = buildProcessPaymentRequest("123456789012344");
 
-    PostPaymentResponse expectedResponse = buildPostPaymentResponse(
-        null,
+    PaymentResponse expectedResponse = buildPaymentResponse(
         PaymentStatus.DECLINED,
         "***********2344"
     );
@@ -72,28 +83,37 @@ class PaymentGatewayServiceTest {
 
     when(bankSimulatorClient.authorisePayment(any())).thenReturn(authPaymentResponse);
 
-    PostPaymentResponse response = paymentGatewayService.processPayment(request);
+    PaymentResponse response = paymentGatewayService.processPayment(request);
 
+    ArgumentCaptor<ProcessedPaymentResponse> captor = ArgumentCaptor
+        .forClass(ProcessedPaymentResponse.class);
+    verify(paymentsRepository).add(captor.capture());
+
+    // Assertion on the object saved in repository
+    ProcessedPaymentResponse savedResponse = captor.getValue();
+    assertThat(savedResponse.getStatus()).isEqualTo(expectedResponse.getStatus());
+    assertThat(savedResponse.getAuthorisationCode()).isNull();
+
+    // Assertion on the returned object
     assertThat(response)
         .usingRecursiveComparison()
         .ignoringFields("id")
         .isEqualTo(expectedResponse);
-    verify(paymentsRepository).add(response);
-
   }
 
   @Test
   void shouldReturnPaymentDetailsWhenPaymentExists() {
     UUID paramId = UUID.randomUUID();
-    PostPaymentResponse expectedResponse = buildPostPaymentResponse(
-        paramId,
-        PaymentStatus.AUTHORIZED,
-        "***********2345"
+    ProcessedPaymentResponse processedPaymentResponse = buildProcessedPaymentResponse(
+        paramId
     );
 
-    when(paymentsRepository.get(paramId)).thenReturn(Optional.of(expectedResponse));
+    PaymentResponse expectedResponse = PaymentResponse
+        .createFromProcessedResponse(processedPaymentResponse);
 
-    PostPaymentResponse result = paymentGatewayService.getPaymentById(paramId);
+    when(paymentsRepository.get(paramId)).thenReturn(Optional.of(processedPaymentResponse));
+
+    PaymentResponse result = paymentGatewayService.getPaymentById(paramId);
 
     assertThat(result).isEqualTo(expectedResponse);
   }
@@ -104,7 +124,7 @@ class PaymentGatewayServiceTest {
 
     assertThatThrownBy(() -> paymentGatewayService.getPaymentById(paramId))
         .isInstanceOf(EventProcessingException.class)
-        .hasMessage("Invalid ID");
+        .hasMessage("Invalid ID - Could not find payment associated with provided id");
   }
 
   private ProcessPaymentRequest buildProcessPaymentRequest(
@@ -120,15 +140,29 @@ class PaymentGatewayServiceTest {
         .build();
   }
 
-  private PostPaymentResponse buildPostPaymentResponse(
-      UUID id,
+  private PaymentResponse buildPaymentResponse(
       PaymentStatus status,
       String cardNumberLastFour
   ) {
-    return PostPaymentResponse.builder()
-        .id(id)
+    return PaymentResponse.builder()
+        .id(null)
         .status(status)
         .cardNumberLastFour(cardNumberLastFour)
+        .expiryMonth(12)
+        .expiryYear(2027)
+        .currency("GBP")
+        .amount(2000)
+        .build();
+  }
+
+  private ProcessedPaymentResponse buildProcessedPaymentResponse(
+      UUID id
+  ) {
+    return ProcessedPaymentResponse.builder()
+        .id(id)
+        .status(PaymentStatus.AUTHORIZED)
+        .authorisationCode("0bb07405-6d44-4b50-a14f-7ae0beff13ad")
+        .cardNumberLastFour("***********2345")
         .expiryMonth(12)
         .expiryYear(2027)
         .currency("GBP")

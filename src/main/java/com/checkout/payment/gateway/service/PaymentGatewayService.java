@@ -24,14 +24,18 @@ public class PaymentGatewayService {
     this.paymentsRepository = paymentsRepository;
   }
 
-  public PostPaymentResponse getPaymentById(UUID id) {
+  public PaymentResponse getPaymentById(UUID id) {
     LOG.debug("Requesting access to to payment with ID {}", id);
-    return paymentsRepository.get(id).orElseThrow(() -> new EventProcessingException("Invalid ID"));
+    return PaymentResponse.createFromProcessedResponse(
+        paymentsRepository.get(id).orElseThrow(() ->
+            new EventProcessingException(
+                "Invalid ID - Could not find payment associated with provided id"
+            )));
   }
 
-  public PostPaymentResponse processPayment(ProcessPaymentRequest paymentRequest) {
+  public PaymentResponse processPayment(ProcessPaymentRequest paymentRequest) {
 
-    LOG.debug("Start process payment");
+    LOG.debug("Start payment processing");
     AuthorisePaymentRequest authorisePaymentRequest = AuthorisePaymentRequest.builder()
             .cardNumber(paymentRequest.getCardNumber())
             .expiryDate(String.format("%02d/%d", paymentRequest.getExpiryMonth(), paymentRequest.getExpiryYear()))
@@ -42,9 +46,10 @@ public class PaymentGatewayService {
 
     AuthorisePaymentResponse authorisePaymentResponse = bankSimulatorClient.authorisePayment(authorisePaymentRequest);
 
-    PostPaymentResponse postPaymentResponse = PostPaymentResponse.builder()
+    ProcessedPaymentResponse processedPaymentResponse = ProcessedPaymentResponse.builder()
             .id(UUID.randomUUID())
             .status(authorisePaymentResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED)
+            .authorisationCode(authorisePaymentResponse.getAuthorizationCode())
             .cardNumberLastFour(paymentRequest.getMaskedCardNumber())
             .expiryMonth(paymentRequest.getExpiryMonth())
             .expiryYear(paymentRequest.getExpiryYear())
@@ -52,8 +57,8 @@ public class PaymentGatewayService {
             .amount(paymentRequest.getAmount())
             .build();
 
-    paymentsRepository.add(postPaymentResponse);
+    paymentsRepository.add(processedPaymentResponse);
 
-    return postPaymentResponse;
+    return PaymentResponse.createFromProcessedResponse(processedPaymentResponse);
   }
 }

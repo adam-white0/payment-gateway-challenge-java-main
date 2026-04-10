@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.checkout.payment.gateway.enums.PaymentStatus;
-import com.checkout.payment.gateway.model.PostPaymentResponse;
+import com.checkout.payment.gateway.model.ProcessedPaymentResponse;
 import com.checkout.payment.gateway.model.ProcessPaymentRequest;
 import com.checkout.payment.gateway.repository.PaymentsRepository;
 import java.util.UUID;
@@ -74,30 +74,6 @@ class PaymentGatewayControllerIT {
   }
 
   @Test
-  void shouldReturn400_whenCardNumberEndsInZero() throws Exception {
-    wireMock.stubFor(post(urlEqualTo("/payments"))
-        .willReturn(serviceUnavailable()));
-
-    String requestBody = """
-            {
-                "cardNumber": "123456789012340",
-                "expiryMonth": 12,
-                "expiryYear": 2027,
-                "currency": "GBP",
-                "amount": 2000,
-                "cvv": "123"
-            }
-        """;
-
-    mvc.perform(MockMvcRequestBuilders.post("/process-payment")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(requestBody))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.REJECTED.getName()))
-        .andExpect(jsonPath("$.errors.cardNumber").exists());
-  }
-
-  @Test
   void shouldReturn200WhenBankAuthorizesPayment() throws Exception {
     wireMock.stubFor(post(urlEqualTo("/payments"))
         .willReturn(okJson("""
@@ -135,7 +111,7 @@ class PaymentGatewayControllerIT {
   // Retrieving payment details
   @Test
   void whenPaymentWithIdExistThenCorrectPaymentIsReturned() throws Exception {
-    PostPaymentResponse payment = PostPaymentResponse.builder()
+    ProcessedPaymentResponse payment = ProcessedPaymentResponse.builder()
             .id(UUID.randomUUID())
             .amount(10)
             .currency("USD")
@@ -161,6 +137,31 @@ class PaymentGatewayControllerIT {
   void whenPaymentWithIdDoesNotExistThen404IsReturned() throws Exception {
     mvc.perform(MockMvcRequestBuilders.get("/payment/" + UUID.randomUUID()))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Page not found"));
+        .andExpect(jsonPath("$.message")
+            .value("Invalid ID - Could not find payment associated with provided id"));
+  }
+
+  @Test
+  void shouldReturn503WhenBankClientIsUnavailable() throws Exception {
+    wireMock.stubFor(post(urlEqualTo("/payments"))
+        .willReturn(serviceUnavailable()));
+
+    String requestBody = """
+            {
+                "cardNumber": "123456789012340",
+                "expiryMonth": 12,
+                "expiryYear": 2027,
+                "currency": "GBP",
+                "amount": 2000,
+                "cvv": "123"
+            }
+        """;
+
+    mvc.perform(MockMvcRequestBuilders.post("/process-payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(requestBody))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.message")
+            .value("Service Unavailable - Unable to authorise payment"));
   }
 }
