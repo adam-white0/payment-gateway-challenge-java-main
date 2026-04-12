@@ -1,6 +1,7 @@
 package com.checkout.payment.gateway.client;
 
-import com.checkout.payment.gateway.exception.PaymentAuthorisationException;
+import com.checkout.payment.gateway.exception.PaymentAuthorisationInvalidException;
+import com.checkout.payment.gateway.exception.PaymentAuthorisationUnavailableException;
 import com.checkout.payment.gateway.model.AuthorisePaymentRequest;
 import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -12,6 +13,7 @@ import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
 
 
+import static com.github.tomakehurst.wiremock.client.WireMock.badRequest;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.serviceUnavailable;
@@ -63,14 +65,25 @@ class BankSimulatorClientTest {
   }
 
   @Test
-  void shouldThrowPaymentAuthorisationExceptionOn503WhenCardNumberEndsInZero() {
+  void shouldThrowPaymentAuthorisationUnavailableExceptionOn503WhenCardNumberEndsInZero() {
     wireMock.stubFor(post(urlEqualTo("/payments"))
         .willReturn(serviceUnavailable()));
 
     assertThatThrownBy(() -> bankSimulatorClient.authorisePayment(
         buildAuthorisePaymentRequest("123456789012340")))
-        .isInstanceOf(PaymentAuthorisationException.class)
+        .isInstanceOf(PaymentAuthorisationUnavailableException.class)
         .hasMessage("Service Unavailable - Unable to authorise payment");
+  }
+
+  @Test
+  void shouldThrowPaymentAuthorisationInvalidExceptionOn400WhenCardDetailsMissing() {
+    wireMock.stubFor(post(urlEqualTo("/payments"))
+        .willReturn(badRequest()));
+
+    assertThatThrownBy(() -> bankSimulatorClient.authorisePayment(
+        buildAuthorisePaymentRequest(null)))
+        .isInstanceOf(PaymentAuthorisationInvalidException.class)
+        .hasMessage("Request rejected - missing card details");
   }
 
   private AuthorisePaymentRequest buildAuthorisePaymentRequest (String cardNumber) {

@@ -9,25 +9,25 @@ import java.util.List;
 
 public class CurrencyValidator implements ConstraintValidator<ValidCurrency, String> {
 
-    @Override
-    public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null) {
-            return true;
-        }
-
-        List<String> supportedCurrencies = Arrays.stream(SupportedCurrency.values())
-                .map(Enum::name).toList();
-
-        if (supportedCurrencies.contains(value)) {
-            return true;
-        }
-
-        context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate(
-                "Currency must be one of: " + String.join(", ", supportedCurrencies)
-        ).addConstraintViolation();
-
-        return false;
+  @Override
+  public boolean isValid(String value, ConstraintValidatorContext context) {
+    if (value == null) {
+      return true;
     }
+
+    List<String> supportedCurrencies = Arrays.stream(SupportedCurrency.values())
+        .map(Enum::name).toList();
+
+    if (supportedCurrencies.contains(value)) {
+      return true;
+    }
+
+    context.disableDefaultConstraintViolation();
+    context.buildConstraintViolationWithTemplate(
+        "Currency must be one of: " + String.join(", ", supportedCurrencies)
+    ).addConstraintViolation();
+
+    return false;
+  }
 }
 

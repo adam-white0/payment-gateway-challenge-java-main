@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 @Builder
 public class PaymentResponse {
+
   private UUID id;
   private PaymentStatus status;
   private String cardNumberLastFour;

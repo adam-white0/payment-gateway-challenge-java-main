@@ -12,7 +12,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = CurrencyValidator.class)
 public @interface ValidCurrency {
-    String message() default "Unsupported currency";
-    Class<?>[] groups() default {};
-    Class<? extends Payload>[] payload() default {};
+
+  String message() default "Unsupported currency";
+
+  Class<?>[] groups() default {};
+
+  Class<? extends Payload>[] payload() default {};
 }

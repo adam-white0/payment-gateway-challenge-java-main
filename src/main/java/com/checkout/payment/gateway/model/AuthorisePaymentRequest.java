@@ -9,6 +9,7 @@ import lombok.Data;
 @Builder
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class AuthorisePaymentRequest {
+
   public String cardNumber;
   public String expiryDate;
   public String currency;

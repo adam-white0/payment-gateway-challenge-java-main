@@ -9,6 +9,7 @@ import java.util.UUID;
 @Data
 @Builder
 public class ProcessedPaymentResponse {
+
   private UUID id;
   private PaymentStatus status;
   private String authorisationCode;

@@ -2,7 +2,7 @@ package com.checkout.payment.gateway.service;
 
 import com.checkout.payment.gateway.client.BankSimulatorClient;
 import com.checkout.payment.gateway.enums.PaymentStatus;
-import com.checkout.payment.gateway.exception.EventProcessingException;
+import com.checkout.payment.gateway.exception.PaymentNotFoundException;
 import com.checkout.payment.gateway.model.AuthorisePaymentResponse;
 import com.checkout.payment.gateway.model.PaymentResponse;
 import com.checkout.payment.gateway.model.ProcessedPaymentResponse;
@@ -123,7 +123,7 @@ class PaymentGatewayServiceTest {
     UUID paramId = UUID.randomUUID();
 
     assertThatThrownBy(() -> paymentGatewayService.getPaymentById(paramId))
-        .isInstanceOf(EventProcessingException.class)
+        .isInstanceOf(PaymentNotFoundException.class)
         .hasMessage("Invalid ID - Could not find payment associated with provided id");
   }
 

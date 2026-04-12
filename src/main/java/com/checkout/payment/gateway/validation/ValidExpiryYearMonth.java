@@ -12,7 +12,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ExpiryYearMonthValidator.class)
 public @interface ValidExpiryYearMonth {
-    String message() default "Card expiry date must be in the future";
-    Class<?>[] groups() default {};
-    Class<? extends Payload>[] payload() default {};
+
+  String message() default "Card expiry date must be in the future";
+
+  Class<?>[] groups() default {};
+
+  Class<? extends Payload>[] payload() default {};
 }
