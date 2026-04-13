@@ -18,17 +18,4 @@ public class ProcessedPaymentResponse {
   private int expiryYear;
   private String currency;
   private int amount;
-
-  @Override
-  public String toString() {
-    return "PaymentResponse{" +
-        "id=" + id +
-        ", status=" + status +
-        ", cardNumberLastFour=" + cardNumberLastFour +
-        ", expiryMonth=" + expiryMonth +
-        ", expiryYear=" + expiryYear +
-        ", currency='" + currency + '\'' +
-        ", amount=" + amount +
-        '}';
-  }
 }

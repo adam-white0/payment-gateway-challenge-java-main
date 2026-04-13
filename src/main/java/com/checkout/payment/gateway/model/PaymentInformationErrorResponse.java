@@ -20,11 +20,4 @@ public class PaymentInformationErrorResponse {
   public String getPaymentStatus() {
     return paymentStatus.getName();
   }
-
-  @Override
-  public String toString() {
-    return "ErrorResponse{" +
-        "message='" + message + '\'' +
-        '}';
-  }
 }
